@@ -9,6 +9,7 @@ from pytest_dependency import depends
 apifolder = os.getcwd()
 sys.path.append(apifolder)
 from functions import DELETE, GET, POST, PUT, SSH_TEST, wait_on_job
+from functions import make_ws_request
 from auto_config import ip, pool_name, user, password
 from auto_config import dev_test
 # comment pytestmark for development testing with --dev-test
@@ -306,7 +307,7 @@ def test_29_verify_the_id_zvol_does_not_exist(request):
 
 
 @pytest.mark.parametrize("create_dst", [True, False])
-def test_28_delete_dataset_with_receive_resume_token(request, create_dst):
+def test_30_delete_dataset_with_receive_resume_token(request, create_dst):
     depends(request, ["pool_04", "ssh_password"], scope="session")
     result = POST('/pool/dataset/', {'name': f'{pool_name}/src'})
     assert result.status_code == 200, result.text
@@ -333,3 +334,18 @@ def test_28_delete_dataset_with_receive_resume_token(request, create_dst):
             'recursive': True,
         })
         assert result.status_code == 200, result.text
+
+def test_31_path_to_dataset(request):
+    depends(request, ["pool_04", "ssh_password"], scope="session")
+
+    get_payload = {'msg': 'method', 'method': 'zfs.dataset.path_to_dataset', 'params': []}
+    get_payload['params'] = [f'/mnt/{pool_name}']
+
+    res = make_ws_request(ip, get_payload)
+    assert res.get('error') is None, res['error']
+    assert res['result'] == pool_name, res
+
+    get_payload['params'] = ['/mnt']
+    res = make_ws_request(ip, get_payload)
+    assert res.get('error') is None, res['error']
+    assert res['result'] is None, res
