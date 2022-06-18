@@ -442,6 +442,9 @@ class FilesystemService(Service):
         Job to put contents to `path`.
         """
         dirname = os.path.dirname(path)
+        if await self.middleware.call('pool.dataset.path_in_locked_datasets', dirname):
+            raise CallError(f'Unable to put contents as {path!r} exists on a locked dataset', errno.EINVAL)
+
         if not os.path.exists(dirname):
             os.makedirs(dirname)
         if options.get('append'):
